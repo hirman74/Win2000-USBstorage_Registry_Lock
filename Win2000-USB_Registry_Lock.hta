@@ -1,0 +1,715 @@
+<html>
+<HEAD>
+<title>USB Registry Gatekeeper Keymaster</title>
+<meta http-equiv = "content-script-type" content = "text/vbscript"/> 
+<HTA:Application
+ApplicationName = Mambang-Tanah-Mambang-Langit-Mambang-Hijau-Mambang-Kuning
+BorderStyle = Raised
+ShowInTaskBar = Yes
+MaximizeButton = Yes
+MinimizeButton = Yes
+WindowState = Normal
+SINGLEINSTANCE = YES
+>
+</HEAD>
+<SCRIPT Language = "VBScript" type = "text/vbscript">
+
+<!--//
+
+
+window.resizeto 520, 550
+window.moveto 300,300
+
+Sub Window_Onload
+
+Const ForReading = 1
+Dim objFSO, objRead, strLine, m, n, o, dtmLastBootUpTime, SecondDiff, MinuteDiff, HourDiff, DayDiff
+Dim objShell
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+Set objShell = CreateObject("WScript.Shell") 
+
+StringCMD = "cmd /c net statistics workstation > here.txt"
+objShell.Run StringCMD, 0 , True
+If objFSO.FileExists ("here.txt") Then
+	Set objRead = objFSO.OpenTextFile("here.txt", ForReading)
+		Do Until objRead.AtEndOfStream 
+		strLine = objRead.ReadLine
+			If Instr (1,strLine,"since",1) > 0 Then
+				m = Instr (1,strLine,"since",1) 
+				n = mid(strLine, m, len (strLine) - m + 2)
+				o = Replace (n,"since ", "")
+				dtmLastBootUpTime = CDate (o)
+				SecondDiff = DateDiff ("s", dtmLastBootUpTime, Now)
+				MinuteDiff = DateDiff ("n", dtmLastBootUpTime, Now)
+				HourDiff = DateDiff ("h", dtmLastBootUpTime, Now)
+				DayDiff = DateDiff ("d", dtmLastBootUpTime, Now)
+			End If
+		Loop
+	objRead.close
+	Set objRead = Nothing
+	objFSO.DeleteFile ("here.txt")
+End If
+
+Set objFSO = Nothing
+Set objShell = Nothing
+Set strLine = Nothing
+Set o = Nothing
+Set n = Nothing
+Set m = Nothing
+
+Dim TotalSecond, TotalMinute, TotalHour, TotalDay
+TotalSecond = SecondDiff
+TotalMinute = 0
+If SecondDiff > 60 AND MinuteDiff = 1 Then
+	TotalSecond = SecondDiff - 60
+	TotalMinute = MinuteDiff
+End If
+
+If MinuteDiff > 1 Then
+	TotalSecond = SecondDiff - (MinuteDiff * 60)
+	TotalMinute = MinuteDiff
+	If TotalSecond < 1 Then
+		TotalSecond = TotalSecond + 60
+		TotalMinute = TotalMinute - 1
+	End If
+End If
+
+TotalHour = 0
+If TotalMinute > 60 Then
+	n = Instr (1, (TotalMinute / 60), ".",1)
+	TotalHour = Mid ((TotalMinute / 60), 1, n - 1)
+	TotalMinute = TotalMinute - (TotalHour * 60)
+End If	
+
+TotalDay = 0
+If TotalHour > 24 Then
+	n = Instr (1, (TotalHour / 24), ".",1)
+	TotalDay = Mid ((TotalHour / 24), 1, n - 1)
+	TotalHour = TotalHour - (TotalDay * 24)
+End If
+
+LastReboot.InnerHTML = dtmLastBootUpTime
+CurrentTime.InnerHTML = Now
+RebootTime.InnerHTML = TotalDay & " days " & TotalHour &" hours "& TotalMinute &" minutes "& TotalSecond & " seconds"
+		
+Set dtmLastBootUpTime = Nothing
+Set SecondDiff = Nothing
+Set MinuteDiff = Nothing
+Set HourDiff = Nothing
+Set DayDiff = Nothing
+Set TotalSecond = Nothing
+Set TotalMinute = Nothing
+Set TotalHour = Nothing
+Set TotalDay = Nothing
+End Sub
+
+
+Sub CheckState
+Checking.InnerHTML = ""
+Const HKEY_LOCAL_MACHINE = &H80000002
+Const HKEY_CURRENT_USER = &H80000001
+Dim strComputer, objRegistry, strKeyPath, strValueName, intValue
+strComputer = "."
+Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+
+strKeyPath = "SYSTEM\CurrentControlSet\Services\USBSTOR"
+strValueName = "Start"
+objRegistry.GetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+	If (intValue = 4) Then 
+		Checking.InnerHTML = ("<b>  Enable USB: <font color = ""#00ff00"">DISABLED </font> </b><br>")
+	Else
+		Checking.InnerHTML = ("<b>  Enable USB: <font color = ""#ff0000"">ENABLED </font> </b><br>")
+	End If
+	
+	
+Dim objFSO
+Set objFSO = CreateObject("Scripting.FileSystemObject")
+	If objFSO.FileExists("C:\winnt\inf\UsbStor.inf") AND NOT (objFSO.FileExists("C:\winnt\inf\UsbStor.inf.backup")) Then
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: <font color = ""#ff0000"">INF Driver enabled </font> </br></b>"
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: INF backup file not found </br></b>"		
+	End If	
+	
+	If objFSO.FileExists("C:\winnt\inf\UsbStor.pnf") AND NOT (objFSO.FileExists("C:\winnt\inf\UsbStor.pnf.backup")) Then		
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: <font color = ""#ff0000"">PNF Driver enabled </font> </br></b>"	
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: PNF backup file not found </br></b>"		
+	End If	
+	
+	If objFSO.FileExists("C:\winnt\inf\UsbStor.inf.backup") AND NOT (objFSO.FileExists("C:\winnt\inf\UsbStor.inf")) Then
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: <font color = ""#00ff00"">INF Driver disable </font> </br></b>"
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: INF file not found </br></b>"		
+	End If
+	
+	If objFSO.FileExists("C:\winnt\inf\UsbStor.pnf.backup") AND NOT (objFSO.FileExists("C:\winnt\inf\UsbStor.pnf")) Then		
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: <font color = ""#00ff00""> PNF Driver disable </font> </br></b>"	
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: PNF file not found </br></b>"
+	End If	
+	
+	If NOT (objFSO.FileExists("C:\winnt\inf\UsbStor.inf")) AND NOT(objFSO.FileExists("C:\winnt\inf\UsbStor.pnf")) AND NOT(objFSO.FileExists("C:\winnt\inf\UsbStor.inf.backup")) AND NOT(objFSO.FileExists("C:\winnt\inf\UsbStor.pnf.backup")) Then
+		Checking.InnerHTML = Checking.InnerHTML & "<b> USB Drivers: INF & PNF files not at designated location </br></b>"
+	End If
+Set objFSO = Nothing
+
+strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\System"
+strValueName = "DisableRegistryTools"
+objRegistry.GetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+	If intValue = 0 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#ff0000"">DisableRegistryTool is DISABLED at HKEY_LOCAL_MACHINE </font><br></b>")
+	ElseIf intValue = 1 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#00ff00"">DisableRegistryTool is ENABLED at HKEY_LOCAL_MACHINE </font><br></b>")
+	Else 
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#ff0000"">DisableRegistryTools at HKEY_LOCAL_MACHINE not set.</font><b><br> ")
+	End If
+objRegistry.GetDWORDValue HKEY_CURRENT_USER,strKeyPath,strValueName,intValue
+	If intValue = 0 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#ff0000"">DisableRegistryTool is DISABLED at HKEY_CURRENT_USER </font><br></b>")
+	ElseIf intValue = 1 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#00ff00"">DisableRegistryTool is ENABLED at HKEY_CURRENT_USER </font><br></b>")
+	Else 
+	Checking.InnerHTML = Checking.InnerHTML & ("<b><font color = ""#ff0000"">DisableRegistryTools at HKEY_CURRENT_USER not set.</font><b><br> ")
+	End If
+strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+strValueName = "NoControlPanel"
+objRegistry.GetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+	If intValue = 0 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#ff0000"">NoControlPanel is DISABLED at HKEY_LOCAL_MACHINE </font><br></b>")
+	ElseIf intValue = 1 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#00ff00"">NoControlPanel is ENABLED at HKEY_LOCAL_MACHINE </font><br></b>")
+	Else 
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#ff0000"">NoControlPanel at HKEY_LOCAL_MACHINE not set.</font><b><br> ")
+	End If
+objRegistry.GetDWORDValue HKEY_CURRENT_USER,strKeyPath,strValueName,intValue
+	If intValue = 0 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#ff0000"">NoControlPanel is DISABLED at HKEY_CURRENT_USER </font><br></b>")
+	ElseIf intValue = 1 Then
+	Checking.InnerHTML = Checking.InnerHTML & ("<b> <font color = ""#00ff00"">NoControlPanel is ENABLED at HKEY_CURRENT_USER </font><br></b>")
+	Else 
+	Checking.InnerHTML = Checking.InnerHTML & ("<b><font color = ""#ff0000"">NoControlPanel at HKEY_CURRENT_USER not set.</font><b><br> ")
+	End If
+
+Set strComputer = Nothing
+Set objRegistry = Nothing
+Set strKeyPath = Nothing
+Set strValueName = Nothing
+Set intValue = Nothing
+End Sub
+
+Function USBEnable (passingIN)
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+		If passingIN.value = LoginPassword Then
+			Const HKEY_LOCAL_MACHINE = &H80000002
+			Dim strComputer, objRegistry, strKeyPath, strValueName, intValue, intValue1
+			strComputer = "."
+			Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+			strKeyPath = "SYSTEM\CurrentControlSet\Services\USBSTOR"
+			strValueName = "Start"
+			objRegistry.GetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+				If intValue = 4 Then 
+					intValue1 = 3
+					objRegistry.SetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue1
+					Checking.InnerHTML = ("<b> USB changed from Disable to Enable. <br>Please reboot PC to enforce changes. </b><br>")
+				Else
+					Checking.InnerHTML = ("<b> Enable USB : ENABLED <br>Please reboot PC to enact changes.</b>")
+				End If
+			Set strComputer = Nothing
+			Set objRegistry = Nothing
+			Set strKeyPath = Nothing
+			Set strValueName = Nothing
+			Set intValue = Nothing
+			Set intValue1 = Nothing
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")
+		End If
+End Function
+
+Function USBDisable (passingIN)
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+		If passingIN.value = LoginPassword Then
+			Const HKEY_LOCAL_MACHINE = &H80000002
+			Dim strComputer, objRegistry, strKeyPath, strValueName, intValue, intValue1
+			strComputer = "."
+			Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+			strKeyPath = "SYSTEM\CurrentControlSet\Services\USBSTOR"
+			strValueName = "Start"
+			objRegistry.GetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+				If intValue = 3 Then 
+					intValue1 = 4
+					objRegistry.SetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue1
+					Checking.InnerHTML = ("<b> USB changed from Enable to Disable. <br>Please reboot PC to enforce changes. </b><br>")
+				Else
+					Checking.InnerHTML = ("<b> Enable USB : DISABLED <br>Please reboot PC to enact changes.</b>")
+				End If
+			Set strComputer = Nothing
+			Set objRegistry = Nothing
+			Set strKeyPath = Nothing
+			Set strValueName = Nothing
+			Set intValue = Nothing
+			Set intValue1 = Nothing
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")
+		End If
+End Function
+
+Function RegEnable (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+	Const HKEY_LOCAL_MACHINE = &H80000002
+	Const HKEY_CURRENT_USER = &H80000001
+	Dim strComputer, strKeyPath, strValueName, objRegistry, Return1, intValue
+	strComputer = "."
+	Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+	strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\System"
+	strValueName = "DisableRegistryTools"	
+		If passingIN.value = LoginPassword Then
+			Return1 = objRegistry.CreateKey(HKEY_LOCAL_MACHINE, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 1
+				objRegistry.SetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = ("<b>DisableRegistryTool is ENABLED at HKLM <br></b>")
+					Else 
+					MsgBox ("Error in creating HKEY_LOCAL_MACHINE key and DWORD value = " & Err.Number)
+				End If
+			End If
+			Return1 = objRegistry.CreateKey(HKEY_CURRENT_USER, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 1
+				objRegistry.SetDWORDValue HKEY_CURRENT_USER,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = Checking.InnerHTML  & ("<b>DisableRegistryTool is ENABLED at HKCU <br></b>")
+					Else 
+					MsgBox ("Error in creating HKEY_CURRENT_USER key and DWORD value = " & Err.Number)
+				End If	
+			End If
+			Checking.InnerHTML = Checking.InnerHTML  & ("<b>Please reboot PC to enact changes.<br></b>")
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")
+		End If
+	Set yearly = Nothing
+	Set monthly = Nothing
+	Set daily = Nothing
+	Set LoginPassword = Nothing
+	Set strComputer = Nothing
+	Set strKeyPath = Nothing
+	Set strValueName = Nothing
+	Set objRegistry = Nothing
+	Set Return1 = Nothing
+	Set intValue = Nothing
+End Function
+
+Function RegDisable (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+	Const HKEY_LOCAL_MACHINE = &H80000002
+	Const HKEY_CURRENT_USER = &H80000001
+	Dim strComputer, strKeyPath, strValueName, objRegistry, Return1, intValue
+	strComputer = "."
+	Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+	strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\System"
+	strValueName = "DisableRegistryTools"	
+		If passingIN.value = LoginPassword Then
+			Return1 = objRegistry.CreateKey(HKEY_LOCAL_MACHINE, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 0
+				objRegistry.SetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = ( "<b>DisableRegistryTool is DISABLED at HKEY_LOCAL_MACHINE <br></b>" )
+				Else 
+					Checking.InnerHTML = ( "<b> Error in creating HKEY_LOCAL_MACHINE key and DWORD value = " & Err.Number)
+				End If
+			End If
+			Return1 = objRegistry.CreateKey(HKEY_CURRENT_USER, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 0
+				objRegistry.SetDWORDValue HKEY_CURRENT_USER,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = Checking.InnerHTML & ("<b>DisableRegistryTool is DISABLED at HKEY_CURRENT_USER<br></b>")
+				Else 
+					Checking.InnerHTML = Checking.InnerHTML & ("Error in creating HKEY_CURRENT_USER key and DWORD value = " & Err.Number)
+				End If	
+			End If
+			Checking.InnerHTML = Checking.InnerHTML & ("<b> Please reboot PC to enact changes.</b>")
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")
+		End If
+	Set yearly = Nothing
+	Set monthly = Nothing
+	Set daily = Nothing
+	Set LoginPassword = Nothing
+	Set strComputer = Nothing
+	Set strKeyPath = Nothing
+	Set strValueName = Nothing
+	Set objRegistry = Nothing
+	Set Return1 = Nothing
+	Set intValue = Nothing
+End Function
+
+Function RegNotConfig (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+	Const HKEY_LOCAL_MACHINE = &H80000002
+	Const HKEY_CURRENT_USER = &H80000001
+	Dim strComputer, strKeyPath, strValueName, objRegistry, Return1
+	strComputer = "."
+	Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+	strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\System"
+	strValueName = "DisableRegistryTools"	
+		If passingIN.value = LoginPassword Then
+			Return1 = objRegistry.DeleteValue(HKEY_LOCAL_MACHINE,strKeyPath,strValueName)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				Checking.InnerHTML = ("<b>DisableRegistryTool at HKEY_LOCAL_MACHINE is REMOVED <br></b>")
+			Else
+				Checking.InnerHTML = ("<b>DisableRegistryTools at HKEY_LOCAL_MACHINE not set.<b> <br> ")
+			End If	
+			Return1 = objRegistry.DeleteValue(HKEY_CURRENT_USER,strKeyPath,strValueName)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				Checking.InnerHTML = Checking.InnerHTML & ("<b>DisableRegistryTool at HKEY_CURRENT_USER is REMOVED <br></b>")
+			Else
+				Checking.InnerHTML = Checking.InnerHTML &  ("<b>DisableRegistryTools at HKEY_CURRENT_USER not set.<b><br> ")
+			End If	
+			Checking.InnerHTML = Checking.InnerHTML & (" <b> Please reboot PC to enact changes.</b> ")
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")
+		End If
+	Set yearly = Nothing
+	Set monthly = Nothing
+	Set daily = Nothing
+	Set LoginPassword = Nothing
+	Set strComputer = Nothing
+	Set strKeyPath = Nothing
+	Set strValueName = Nothing
+	Set objRegistry = Nothing
+	Set Return1 = Nothing
+End Function
+
+Function CntlPnlEnable (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+	Const HKEY_CURRENT_USER = &H80000001
+	Const HKEY_LOCAL_MACHINE = &H80000002
+	Dim strComputer, strKeyPath, strValueName, objRegistry, Return1, intValue
+	strComputer = "."
+	Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+	strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+	strValueName = "NoControlPanel"
+		If passingIN.value = LoginPassword Then
+			Return1 = objRegistry.CreateKey(HKEY_LOCAL_MACHINE, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 1
+				objRegistry.SetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = ("<b> NoControlPanel is ENABLED at HKEY_LOCAL_MACHINE <br></b>")
+					Else 
+					MsgBox ("Error in creating HKEY_LOCAL_MACHINE key and DWORD value = " & Err.Number)
+				End If
+			End If
+			Return1 = objRegistry.CreateKey(HKEY_CURRENT_USER, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 1
+				objRegistry.SetDWORDValue HKEY_CURRENT_USER,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = Checking.InnerHTML  & ("<b> NoControlPanel is ENABLED at HKEY_CURRENT_USER <br></b>")
+					Else 
+					MsgBox ("Error in creating HKEY_CURRENT_USER key and DWORD value = " & Err.Number)
+				End If	
+			End If
+			Checking.InnerHTML = Checking.InnerHTML  & ("<b> Please reboot PC to enact changes.<br></b>")
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")			
+		End If
+	Set yearly = Nothing
+	Set monthly = Nothing
+	Set daily = Nothing
+	Set LoginPassword = Nothing
+	Set strComputer = Nothing
+	Set strKeyPath = Nothing
+	Set strValueName = Nothing
+	Set objRegistry = Nothing
+	Set Return1 = Nothing
+	Set intValue = Nothing
+End Function
+
+Function CntlPnlDisable (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+	Const HKEY_CURRENT_USER = &H80000001
+	Const HKEY_LOCAL_MACHINE = &H80000002
+	Dim strComputer, strKeyPath, strValueName, objRegistry, Return1, intValue
+	strComputer = "."
+	Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+	strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+	strValueName = "NoControlPanel"
+		If passingIN.value = LoginPassword Then
+			Return1 = objRegistry.CreateKey(HKEY_LOCAL_MACHINE, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 0
+				objRegistry.SetDWORDValue HKEY_LOCAL_MACHINE,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = ("<b> NoControlPanel is DISABLED at HKEY_LOCAL_MACHINE <br></b>")
+					Else 
+					MsgBox ("Error in creating HKEY_LOCAL_MACHINE key and DWORD value = " & Err.Number)
+				End If
+			End If
+			Return1 = objRegistry.CreateKey(HKEY_CURRENT_USER, strKeyPath)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				intValue = 0
+				objRegistry.SetDWORDValue HKEY_CURRENT_USER,strKeyPath,strValueName,intValue
+				If Err = 0 Then
+					Checking.InnerHTML = Checking.InnerHTML  & ("<b> NoControlPanel is DISABLED at HKEY_CURRENT_USER <br></b>")
+					Else 
+					MsgBox ("Error in creating HKEY_CURRENT_USER key and DWORD value = " & Err.Number)
+				End If	
+			End If
+			Checking.InnerHTML = Checking.InnerHTML  & ("<b> Please reboot PC to enact changes.<br></b>")
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")			
+		End If
+	Set yearly = Nothing
+	Set monthly = Nothing
+	Set daily = Nothing
+	Set LoginPassword = Nothing
+	Set strComputer = Nothing
+	Set strKeyPath = Nothing
+	Set strValueName = Nothing
+	Set objRegistry = Nothing
+	Set Return1 = Nothing
+	Set intValue = Nothing
+End Function
+
+Function CntlPnlNotConfig (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+	Const HKEY_LOCAL_MACHINE = &H80000002
+	Const HKEY_CURRENT_USER = &H80000001
+	Dim strComputer, strKeyPath, strValueName, objRegistry, Return1
+	strComputer = "."
+	Set objRegistry = GetObject("winmgmts:\\" & strComputer & "\root\default:StdRegProv")
+	strKeyPath = "Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+	strValueName = "NoControlPanel"	
+		If passingIN.value = LoginPassword Then
+			Return1 = objRegistry.DeleteValue(HKEY_LOCAL_MACHINE,strKeyPath,strValueName)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				Checking.InnerHTML = ("<b>NoControlPanel at HKEY_LOCAL_MACHINE is REMOVED <br></b>")
+			Else
+				Checking.InnerHTML = ("<b>NoControlPanel at HKEY_LOCAL_MACHINE not set.<b> <br> ")
+			End If	
+			Return1 = objRegistry.DeleteValue(HKEY_CURRENT_USER,strKeyPath,strValueName)
+			If (Return1 = 0) And (Err.Number = 0) Then    
+				Checking.InnerHTML = Checking.InnerHTML & ("<b>NoControlPanel at HKEY_CURRENT_USER is REMOVED <br></b>")
+			Else
+				Checking.InnerHTML = Checking.InnerHTML &  ("<b>NoControlPanel at HKEY_CURRENT_USER not set.<b><br> ")
+			End If	
+			Checking.InnerHTML = Checking.InnerHTML & (" <b> Please reboot PC to enact changes.</b> ")
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")
+		End If
+	Set yearly = Nothing
+	Set monthly = Nothing
+	Set daily = Nothing
+	Set LoginPassword = Nothing
+	Set strComputer = Nothing
+	Set strKeyPath = Nothing
+	Set strValueName = Nothing
+	Set objRegistry = Nothing
+	Set Return1 = Nothing
+End Function
+
+
+Function USBDriversON (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+		If passingIN.value = LoginPassword Then
+		Dim objFSO
+		Set objFSO = CreateObject("Scripting.FileSystemObject")
+			If objFSO.FileExists("C:\winnt\inf\UsbStor.inf.backup") Then
+				objFSO.MoveFile "C:\winnt\inf\UsbStor.inf.backup" , "C:\winnt\inf\UsbStor.inf"
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB INF Driver Enable </br></b>"
+			ElseIf Not (objFSO.FileExists("C:\winnt\inf\UsbStor.inf.backup")) Then
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB INF backup file not at present location </br></b>"
+			End If
+			If objFSO.FileExists("C:\winnt\inf\UsbStor.pnf.backup") Then
+				objFSO.MoveFile "C:\winnt\inf\UsbStor.pnf.backup" , "C:\winnt\inf\UsbStor.pnf"
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB PNF Driver Enable </br></b>"
+			ElseIf Not(objFSO.FileExists("C:\winnt\inf\UsbStor.pnf.backup")) Then
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB PNF backup file not at present location </br></b>"
+			End If
+			Set objFSO = Nothing
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")
+		End If
+End Function
+
+Function USBDriversOFF (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+		If passingIN.value = LoginPassword Then
+			Dim objFSO
+			Set objFSO = CreateObject("Scripting.FileSystemObject")
+			If objFSO.FileExists("C:\winnt\inf\UsbStor.inf") Then
+				objFSO.MoveFile "C:\winnt\inf\UsbStor.inf" , "C:\winnt\inf\UsbStor.inf.backup"
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB INF Driver Disable </br></b>"
+			ElseIf Not (objFSO.FileExists("C:\winnt\inf\UsbStor.inf")) Then
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB INF file not at present location </br></b>"
+			End If
+			If objFSO.FileExists("C:\winnt\inf\UsbStor.pnf") Then
+				objFSO.MoveFile "C:\winnt\inf\UsbStor.pnf" , "C:\winnt\inf\UsbStor.pnf.backup"
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB PNF Driver Disable </br></b>"
+			ElseIf Not (objFSO.FileExists("C:\winnt\inf\UsbStor.pnf")) Then 
+				Checking.InnerHTML = Checking.InnerHTML & "<b> USB PNF file not at present location </br></b>"
+			End If
+			Set objFSO = Nothing
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")			
+		End If
+End Function
+
+Function RebootNow (passingIN)
+	Checking.InnerHTML = ""
+	Dim yearly, monthly, daily, LoginPassword
+	yearly = year(date)
+	If Len (month(date)) = 1 Then monthly = "0"&(month(date)) Else monthly = (month(date)) End If
+	If Len (day(date)) = 1 Then daily = "0"&(day(date)) Else daily =(day(date)) End If
+	LoginPassword = yearly & monthly & daily
+		If passingIN.value = LoginPassword Then
+			Checking.InnerHTML = "<b><font size = 30 >Rebooting...........</b>"
+			Set OpSysSet = GetObject("winmgmts:{(Shutdown)}//./root/cimv2").ExecQuery("select * from Win32_OperatingSystem where Primary=true") 
+			for each OpSys in OpSysSet 
+				OpSys.Reboot() 
+			next
+		Else
+			Checking.InnerHTML = ("<b> INCORRECT PASSWORD </b><br>")			
+		End If
+End Function
+
+
+
+//-->
+
+</SCRIPT>
+
+<BODY >
+<table width="100%" >
+
+
+<TR>
+<td>Last Reboot</td>
+<td colspan = 3><span id = "LastReboot"></span></td>
+</tr>
+
+<TR>
+<td>Current Time</td>
+<td colspan = 3><span id = "CurrentTime"></span></td>
+</tr>
+
+<TR>
+<td>Uptime</td>
+<td colspan = 3><span id = "RebootTime"></span></td>
+</tr>
+
+<TR>
+<td colspan = 4 align = middle><hr/></td>
+</TR>
+
+<tr>
+<td >Enable USB</td>
+<td align = middle ><input type="BUTTON" value="Enable" onclick="USBEnable passingIN"></td>
+<td align = middle ><input type="BUTTON" value="Disable" onclick="USBDisable passingIN"></td>
+<td align = middle>&nbsp;</td>
+</tr>
+
+<TR>
+<td colspan = 4 align = middle><hr/></td>
+</TR>
+
+<tr>
+<td>USB Drivers</td>
+<td align = middle ><input type="BUTTON" value="Enable" onclick="USBDriversON passingIN"></td>
+<td align = middle ><input type="BUTTON" value="Disable" onclick="USBDriversOFF passingIN"></td>
+<td align = middle>&nbsp;</td>
+</tr>
+
+<TR>
+<td colspan = 4 align = middle><hr/></td>
+</TR>
+
+<tr>
+<td>Disabling Registry Edit</td>
+<td align = middle ><input type="BUTTON" value="Enable" onclick="RegEnable passingIN"></td>
+<td align = middle ><input type="BUTTON" value="Disable" onclick="RegDisable passingIN"></td>
+<td align = middle ><input type="BUTTON" value="Not Configured" onclick="RegNotConfig passingIN"></td>
+<tr>
+<TR>
+<td colspan = 4 align = middle><hr/></td>
+</TR>
+
+<tr>
+<td>No Control Panel</td>
+<td align = middle ><input type="BUTTON" value="Enable" onclick="CntlPnlEnable passingIN"></td>
+<td align = middle ><input type="BUTTON" value="Disable" onclick="CntlPnlDisable passingIN"></td>
+<td align = middle ><input type="BUTTON" value="Not Configured" onclick="CntlPnlNotConfig passingIN"></td>
+<tr>
+<TR>
+<td colspan = 4 align = middle><hr/></td>
+</TR>
+
+
+<TR>
+<td>Password</td>
+<td colspan = 2 align = middle ><input type="password" id="passingIN" ></td>
+<td align = middle ><input type="BUTTON" value="  Reboot Now  " onclick="RebootNow passingIN"></td>
+</tr>
+
+<TR>
+<td colspan = 4 align = middle ><input type="BUTTON" value="  Check Status  " onclick="CheckState"></td>
+</tr>
+<TR>
+<td colspan = 4 align = middle><hr/></td>
+</TR>
+<TR>
+<td colspan = 4 align = middle><span id = "Checking"></span></td>
+</tr>
+
+
+</table>
+</BODY>
+</html>
+
